@@ -1,0 +1,52 @@
+{% extends 'core/base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Mchezo - Dashboard" %}{% endblock %}
+
+{% block content %}
+<div class="container max-w-md mx-auto">
+  <h2 class="text-xl font-semibold mb-4">{% trans "Mchezo Dashboard" %}</h2>
+  {% if admin_groups %}
+    <h3 class="text-lg font-medium mb-2">{% trans "Your Groups (Admin)" %}</h3>
+    {% for group in admin_groups %}
+      <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md mb-4">
+        <p class="font-medium">{{ group.name }}</p>
+        <p class="text-sm">{% trans "Contribution" %}: {{ group.amount_per_cycle }} TZS {% trans "every" %} {{ group.cycle_duration_days }} {% trans "days" %}</p>
+        <a href="{% url 'mchezo:admin_dashboard' group.id %}" class="block mt-2 text-sm text-blue-500 hover:underline">{% trans "Manage Group" %}</a>
+      </div>
+    {% endfor %}
+  {% endif %}
+  <h3 class="text-lg font-medium mb-2">{% trans "Your Groups (Member)" %}</h3>
+  <div id="member-data" data-members="{{ member_data_json|escape }}" style="display: none;"></div>
+  <div id="member-groups"></div>
+  <a href="{% url 'mchezo:create_group' %}" class="block bg-[var(--primary)] text-white p-2 rounded-lg text-center hover:bg-green-600">{% trans "Create New Group" %}</a>
+</div>
+
+<script>
+  const memberDataElement = document.getElementById('member-data');
+  const memberData = JSON.parse(memberDataElement.getAttribute('data-members'));
+  const memberGroupsContainer = document.getElementById('member-groups');
+
+  if (memberData.length === 0) {
+    memberGroupsContainer.innerHTML = '<p>{% trans "You are not a member of any groups." %}</p>';
+  } else {
+    memberData.forEach(data => {
+      const memberDiv = document.createElement('div');
+      memberDiv.className = 'bg-[var(--card-bg)] p-4 rounded-lg shadow-md mb-4';
+      memberDiv.innerHTML = `
+        <p class="font-medium">${data.group_name}</p>
+        <p class="text-sm">Total Paid: ${data.total_paid} TZS</p>
+        <p class="text-sm">Debt: ${data.debt} TZS</p>
+        <div class="progress-bar mt-2 w-full bg-gray-200 rounded-full h-4">
+          <div class="progress-fill h-4 rounded-full bg-[var(--primary)]" style="width: ${data.progress_percentage}%"></div>
+        </div>
+        ${data.payments.map(payment => `
+          <p class="text-sm">Paid ${payment.amount} TZS on ${payment.date}</p>
+        `).join('')}
+        ${data.last_payment_id ? `<a href="/mchezo/report_issue/${data.last_payment_id}/" class="block mt-2 text-sm text-blue-500 hover:underline">Report Issue</a>` : ''}
+      `;
+      memberGroupsContainer.appendChild(memberDiv);
+    });
+  }
+</script>
+{% endblock %}

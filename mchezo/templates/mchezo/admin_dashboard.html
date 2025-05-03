@@ -1,0 +1,50 @@
+{% extends 'core/base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Mchezo - Admin Dashboard" %} - {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="container max-w-4xl mx-auto">
+  <h2 class="text-xl font-semibold mb-4">{{ group.name }} - {% trans "Admin Dashboard" %}</h2>
+  <div class="flex justify-between mb-4">
+    <a href="{% url 'mchezo:export_pdf' group.id %}" class="bg-[var(--primary)] text-white p-2 rounded-lg hover:bg-green-600">{% trans "Export PDF" %}</a>
+    <a href="?today=1" class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">{% trans "Show Today's Payments" %}</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table w-full bg-[var(--card-bg)] rounded-lg shadow-md">
+      <thead>
+        <tr class="bg-[var(--primary)] text-white">
+          <th class="p-2">{% trans "Name" %}</th>
+          <th class="p-2">{% trans "Phone" %}</th>
+          <th class="p-2">{% trans "Total Paid" %}</th>
+          <th class="p-2">{% trans "Debt" %}</th>
+          <th class="p-2">{% trans "Last Payment" %}</th>
+          <th class="p-2">{% trans "Today" %}</th>
+          <th class="p-2">{% trans "Action" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for member in members %}
+          <tr>
+            <td class="p-2">{{ member.user.first_name }}</td>
+            <td class="p-2">{{ member.user.phone_number }}</td>
+            <td class="p-2">{{ member.total_paid }} TZS</td>
+            <td class="p-2 {% if member.debt > 0 %}text-[var(--error)]{% endif %}">{{ member.debt }} TZS</td>
+            <td class="p-2">{{ member.payments.last.date|default:"-" }}</td>
+            <td class="p-2">
+              {% if member.payments.filter(date=today).exists %}
+                <i class="fas fa-check text-[var(--primary)]"></i>
+              {% else %}
+                <i class="fas fa-times text-[var(--error)]"></i>
+              {% endif %}
+            </td>
+            <td class="p-2">
+              <a href="{% url 'mchezo:log_payment' member.id %}" class="text-blue-500 hover:underline">{% trans "Log Payment" %}</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

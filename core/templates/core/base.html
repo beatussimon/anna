@@ -1,0 +1,138 @@
+{% load static i18n %}
+<!DOCTYPE html>
+<html lang="{% if request.session.language == 'sw' %}sw{% else %}en{% endif %}" data-theme="{% if request.session.theme == 'dark' %}dark{% else %}light{% endif %}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="{% trans 'Anna: Empowering Tanzanian Finances with Mchezo and Wakala Balance' %}">
+  <title>{% block title %}{% trans "Anna" %}{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <script src="{% static 'js/main.js' %}"></script>
+  <style>
+    [data-theme="light"] {
+      --bg: #f3f4f6;
+      --card-bg: #ffffff;
+      --text: #374151;
+      --primary: #15803d;
+      --error: #dc2626;
+      --nav-bg: #ffffff;
+      --footer-bg: #1f2937;
+    }
+    [data-theme="dark"] {
+      --bg: #1f2937;
+      --card-bg: #374151;
+      --text: #f3f4f6;
+      --primary: #22c55e;
+      --error: #ef4444;
+      --nav-bg: #374151;
+      --footer-bg: #111827;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    main {
+      flex: 1;
+    }
+    .navbar, .footer {
+      background-color: var(--nav-bg);
+    }
+    .footer {
+      background-color: var(--footer-bg);
+    }
+    .nav-link:hover, .footer-link:hover {
+      color: #3b82f6;
+      transition: color 0.2s;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar sticky top-0 z-50 shadow-md">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-4">
+        <a href="{% url 'home' %}" class="text-2xl font-bold text-[var(--primary)]">Anna</a>
+        <div class="hidden md:flex space-x-4">
+          <a href="{% url 'home' %}" class="nav-link text-sm font-medium hover:text-blue-500 {% if request.path == '/' %}underline{% endif %}">{% trans "Home" %}</a>
+          <div class="relative group">
+            <button class="nav-link text-sm font-medium hover:text-blue-500 focus:outline-none">{% trans "Services" %}</button>
+            <div class="absolute hidden group-hover:block bg-[var(--card-bg)] shadow-lg rounded-md mt-2">
+              <a href="{% url 'mchezo:dashboard' %}" class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">{% trans "Mchezo" %}</a>
+              <a href="{% url 'multisyncbalance:dashboard' %}" class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">{% trans "Wakala Balance" %}</a>
+            </div>
+          </div>
+          <a href="{% url 'help' %}" class="nav-link text-sm font-medium hover:text-blue-500">{% trans "Help" %}</a>
+        </div>
+        <div class="flex items-center space-x-4">
+          <span class="text-sm">{{ request.user.phone_number }}</span>
+          <a href="{% url 'settings' %}" class="nav-link text-sm hover:text-blue-500">{% trans "Settings" %}</a>
+          <a href="{% url 'logout' %}" class="nav-link text-sm hover:text-blue-500">{% trans "Logout" %}</a>
+          <button onclick="toggleTheme()" class="text-sm text-blue-500 focus:outline-none" aria-label="{% trans 'Toggle Theme' %}">
+            <i class="fas fa-moon"></i>
+          </button>
+        </div>
+        <button class="md:hidden text-[var(--primary)] focus:outline-none" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+          <i class="fas fa-bars text-2xl"></i>
+        </button>
+      </div>
+      <div id="mobile-menu" class="hidden md:hidden">
+        <a href="{% url 'home' %}" class="block py-2 text-sm hover:text-blue-500">{% trans "Home" %}</a>
+        <a href="{% url 'mchezo:dashboard' %}" class="block py-2 text-sm hover:text-blue-500">{% trans "Mchezo" %}</a>
+        <a href="{% url 'multisyncbalance:dashboard' %}" class="block py-2 text-sm hover:text-blue-500">{% trans "Wakala Balance" %}</a>
+        <a href="{% url 'help' %}" class="block py-2 text-sm hover:text-blue-500">{% trans "Help" %}</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div id="offline-notice" class="hidden bg-yellow-100 text-yellow-800 p-2 rounded-lg mb-4 text-center">
+      {% trans "Offline Mode: Data will sync when online." %}
+    </div>
+    {% if messages %}
+      <div class="mb-4">
+        {% for message in messages %}
+          <div class="bg-{{ message.tags }}-100 text-{{ message.tags }}-800 p-2 rounded-lg">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-[var(--text)]">
+        <div>
+          <a href="{% url 'home' %}" class="text-lg font-bold text-[var(--primary)]">Anna</a>
+          <p class="text-sm mt-2">{% trans "Empowering Tanzanian Finances" %}</p>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold">{% trans "Quick Links" %}</h3>
+          <a href="{% url 'home' %}" class="footer-link block text-sm hover:text-blue-500">{% trans "Home" %}</a>
+          <a href="{% url 'mchezo:dashboard' %}" class="footer-link block text-sm hover:text-blue-500">{% trans "Mchezo" %}</a>
+          <a href="{% url 'multisyncbalance:dashboard' %}" class="footer-link block text-sm hover:text-blue-500">{% trans "Wakala Balance" %}</a>
+          <a href="{% url 'help' %}" class="footer-link block text-sm hover:text-blue-500">{% trans "Help" %}</a>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold">{% trans "Connect" %}</h3>
+          <a href="https://wa.me/+255123456789" class="footer-link block text-sm hover:text-blue-500"><i class="fab fa-whatsapp mr-2"></i>{% trans "WhatsApp" %}</a>
+          <a href="mailto:support@anna.app" class="footer-link block text-sm hover:text-blue-500"><i class="fas fa-envelope mr-2"></i>{% trans "Email" %}</a>
+          <p class="text-sm mt-2">© 2025 Anna. {% trans "All rights reserved." %}</p>
+        </div>
+      </div>
+      <div class="text-center mt-4">
+        <a href="{% url 'set_language' 'sw' %}" class="footer-link text-sm text-blue-500">{% trans "Kiswahili" %}</a> |
+        <a href="{% url 'set_language' 'en' %}" class="footer-link text-sm text-blue-500">{% trans "English" %}</a> |
+        <span class="text-sm text-blue-500 cursor-pointer" onclick="toggleTheme()">{% trans "Toggle Theme" %}</span>
+      </div>
+    </div>
+  </footer>
+
+  <audio id="welcome" src="{% static 'audio/welcome_sw.mp3' %}" autoplay hidden></audio>
+</body>
+</html>

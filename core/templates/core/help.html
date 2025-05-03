@@ -1,0 +1,20 @@
+{% extends 'core/base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Anna - Help" %}{% endblock %}
+
+{% block content %}
+<div class="container max-w-md mx-auto">
+  <h2 class="text-xl font-semibold mb-4">{% trans "Help & Support" %}</h2>
+  <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md">
+    <h3 class="text-lg font-semibold mb-2">{% trans "Frequently Asked Questions" %}</h3>
+    {% for faq in faqs %}
+      <div class="mb-4">
+        <p class="font-medium">{{ faq.question }}</p>
+        <p class="text-sm">{{ faq.answer }}</p>
+      </div>
+    {% endfor %}
+    <a href="https://wa.me/+255123456789" class="block text-sm text-blue-500 hover:underline"><i class="fab fa-whatsapp mr-2"></i>{% trans "Contact Support via WhatsApp" %}</a>
+  </div>
+</div>
+{% endblock %}

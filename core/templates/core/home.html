@@ -1,0 +1,18 @@
+{% extends 'core/base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Anna - Home" %}{% endblock %}
+
+{% block content %}
+<div class="container max-w-md mx-auto">
+  <h2 class="text-xl font-semibold mb-4">{% trans "Welcome to Anna" %}</h2>
+  <div class="grid grid-cols-2 gap-4">
+    {% for service in services %}
+      <div class="service-card bg-[var(--card-bg)] rounded-lg p-4 text-center shadow-md cursor-pointer hover:scale-105 transition-transform" onclick="window.location.href='{{ service.path }}'">
+        <i class="{{ service.icon }} text-4xl text-{% if service.name == 'Mchezo' %}primary{% else %}blue-500{% endif %} mb-2"></i>
+        <h3 class="text-base font-semibold">{{ service.name }}</h3>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

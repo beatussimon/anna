@@ -1,0 +1,54 @@
+{% extends 'core/base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Wakala Balance - Dashboard" %}{% endblock %}
+
+{% block content %}
+<div class="container max-w-4xl mx-auto">
+  <h2 class="text-xl font-semibold mb-4">{% trans "Wakala Balance Dashboard" %}</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md">
+      <p class="text-sm">{% trans "Daily Commissions" %}</p>
+      <p class="text-lg font-semibold">{{ performance.commissions }} TZS</p>
+    </div>
+    <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md">
+      <p class="text-sm">{% trans "Transactions" %}</p>
+      <p class="text-lg font-semibold">{{ performance.transactions }}</p>
+    </div>
+    <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md">
+      <p class="text-sm">{% trans "Float Growth" %}</p>
+      <p class="text-lg font-semibold">{{ performance.float_growth|floatformat:2 }}%</p>
+    </div>
+  </div>
+  <div id="chart-data" 
+       data-labels="{{ chart_labels_json|escape }}" 
+       data-values="{{ chart_data_json|escape }}" 
+       style="display: none;"></div>
+  <canvas id="floatTrendChart" class="mb-4"></canvas>
+  <a href="{% url 'multisyncbalance:balance_form' %}" class="block bg-[var(--primary)] text-white p-2 rounded-lg text-center hover:bg-green-600 mb-4">{% trans "Record Balance" %}</a>
+  <a href="{% url 'multisyncbalance:export_csv' %}" class="block bg-blue-500 text-white p-2 rounded-lg text-center hover:bg-blue-600">{% trans "Export CSV" %}</a>
+  <script>
+    const chartDataElement = document.getElementById('chart-data');
+    const chartLabels = JSON.parse(chartDataElement.getAttribute('data-labels'));
+    const chartDataValues = JSON.parse(chartDataElement.getAttribute('data-values'));
+    const ctx = document.getElementById('floatTrendChart').getContext('2d');
+    const chartData = {
+      labels: chartLabels,
+      datasets: [{
+        label: 'Float Growth',
+        data: chartDataValues,
+        borderColor: 'var(--primary)',
+        fill: false
+      }]
+    };
+    new Chart(ctx, {
+      type: 'line',
+      data: chartData,
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  </script>
+</div>
+{% endblock %}

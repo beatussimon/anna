@@ -1,0 +1,32 @@
+    /* Custom styles for Anna */
+.service-card:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s;
+  }
+  
+  .table-responsive {
+    overflow-x: auto;
+  }
+  
+  .table th, .table td {
+    white-space: nowrap;
+  }
+  
+  .progress-bar {
+    background-color: #e5e7eb;
+    border-radius: 9999px;
+    height: 12px;
+  }
+  
+  .progress-fill {
+    background-color: var(--primary);
+    height: 100%;
+    border-radius: 9999px;
+  }
+  
+  @media (max-width: 640px) {
+    .table th, .table td {
+      display: block;
+      width: 100%;
+    }
+  }

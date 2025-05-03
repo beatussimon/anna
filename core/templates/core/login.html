@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Anna - Login" %}{% endblock %}
+
+{% block content %}
+<div class="container max-w-md mx-auto">
+  <h2 class="text-xl font-semibold mb-4">{% trans "Login" %}</h2>
+  <form method="post" class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md">
+    {% csrf_token %}
+    <div class="mb-4">
+      <label for="phone_number" class="block text-sm font-medium">{% trans "Phone Number" %}</label>
+      <input type="text" name="phone_number" id="phone_number" class="w-full p-2 border rounded-lg" required>
+    </div>
+    <div class="mb-4">
+      <label for="otp" class="block text-sm font-medium">{% trans "OTP" %}</label>
+      <input type="text" name="otp" id="otp" class="w-full p-2 border rounded-lg" required>
+    </div>
+    <button type="submit" class="w-full bg-[var(--primary)] text-white p-2 rounded-lg hover:bg-green-600">{% trans "Login" %}</button>
+  </form>
+</div>
+{% endblock %}
