@@ -1,0 +1,6 @@
+[
+    {"name": "Mchezo", "path": "/mchezo/", "icon": "fas fa-users"},
+    {"name": "Wakala Balance", "path": "/wakala-balance/", "icon": "fas fa-wallet"},
+    {"name": "Savings Tracker", "path": "#", "icon": "fas fa-piggy-bank"},
+    {"name": "Bill Splitter", "path": "#", "icon": "fas fa-hand-holding-usd"}
+  ]

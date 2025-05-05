@@ -10,11 +10,12 @@
     {% csrf_token %}
     <div class="mb-4">
       <label for="phone_number" class="block text-sm font-medium">{% trans "Phone Number" %}</label>
-      <input type="text" name="phone_number" id="phone_number" class="w-full p-2 border rounded-lg" required>
+      <input type="text" name="phone_number" id="phone_number" class="w-full p-2 border rounded-lg" required pattern="\+?[0-9]{10,15}">
     </div>
     <div class="mb-4">
       <label for="otp" class="block text-sm font-medium">{% trans "OTP" %}</label>
-      <input type="text" name="otp" id="otp" class="w-full p-2 border rounded-lg" required>
+      <input type="text" name="otp" id="otp" class="w-full p-2 border rounded-lg" required pattern="[0-9]{6}">
+      <p class="text-sm text-gray-500">{% trans "Enter the 6-digit OTP printed to console." %}</p>
     </div>
     <button type="submit" class="w-full bg-[var(--primary)] text-white p-2 rounded-lg hover:bg-green-600">{% trans "Login" %}</button>
   </form>

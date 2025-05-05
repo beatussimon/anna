@@ -21,26 +21,25 @@ class Group(models.Model):
         return self.name
 
     def clean(self):
-        if self.max_members > 50:
-            raise ValidationError(_('Maximum 50 members allowed'))
+        if self.contribution_amount < 1000:
+            raise ValidationError(_('Contribution amount must be at least 1000 TZS'))
+        if self.max_members < 2 or self.max_members > 50:
+            raise ValidationError(_('Maximum members must be between 2 and 50'))
 
 class Member(models.Model):
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='members', verbose_name=_('Group'))
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name=_('User'))
-    joined_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='memberships')
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='members')  # Ensure related_name matches
     total_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    total_received = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     debt = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     cycles_completed = models.PositiveIntegerField(default=0)
 
     class Meta:
-        unique_together = ('group', 'user')
+        unique_together = ('user', 'group')
         verbose_name = _('Member')
         verbose_name_plural = _('Members')
 
     def __str__(self):
-        return f"{self.user.phone_number} - {self.group.name}"
-
+        return f"{self.user.username} - {self.group.name}"
 class Payment(models.Model):
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='payments', verbose_name=_('Member'))
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Amount'))
@@ -52,20 +51,10 @@ class Payment(models.Model):
         verbose_name_plural = _('Payments')
 
     def clean(self):
-        if self.amount <= 0:
-            raise ValidationError(_('Amount must be positive'))
+        if self.amount < 1000:
+            raise ValidationError(_('Amount must be at least 1000 TZS'))
         if self.date > timezone.now().date():
             raise ValidationError(_('Future dates not allowed'))
-
-class Payout(models.Model):
-    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='payouts', verbose_name=_('Member'))
-    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_('Amount'))
-    date = models.DateField(default=timezone.now, verbose_name=_('Date'))
-    delivered = models.BooleanField(default=False, verbose_name=_('Delivered'))
-
-    class Meta:
-        verbose_name = _('Payout')
-        verbose_name_plural = _('Payouts')
 
 class Invite(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='invites', verbose_name=_('Group'))

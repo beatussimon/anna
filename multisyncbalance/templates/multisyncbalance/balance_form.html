@@ -1,15 +1,24 @@
 {% extends 'core/base.html' %}
 {% load static i18n %}
 
-{% block title %}{% trans "Wakala Balance - Record Balance" %}{% endblock %}
+{% block title %}{% trans "Wakala Balance - Add Balance" %}{% endblock %}
 
 {% block content %}
 <div class="container max-w-md mx-auto">
-  <h2 class="text-xl font-semibold mb-4">{% trans "Record Balance" %}</h2>
+  <h2 class="text-xl font-semibold mb-4">{% trans "Add Balance" %}</h2>
   <form method="post" class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit" class="w-full bg-[var(--primary)] text-white p-2 rounded-lg hover:bg-green-600">{% trans "Save Balance" %}</button>
+    {% for field in form %}
+      <div class="mb-4">
+        <label for="{{ field.id_for_label }}" class="block text-sm font-medium">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          <p class="text-sm text-[var(--error)]">{{ field.errors.as_text }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="w-full bg-[var(--primary)] text-white p-2 rounded-lg hover:bg-green-600">{% trans "Submit" %}</button>
   </form>
+  <a href="{% url 'multisyncbalance:dashboard' %}" class="block mt-4 text-sm text-blue-500 hover:underline">{% trans "Back to Dashboard" %}</a>
 </div>
 {% endblock %}

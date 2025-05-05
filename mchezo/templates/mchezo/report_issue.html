@@ -6,12 +6,10 @@
 {% block content %}
 <div class="container max-w-md mx-auto">
   <h2 class="text-xl font-semibold mb-4">{% trans "Report Issue" %}</h2>
+  <p class="text-sm mb-4">{% trans "Payment" %}: {{ payment.amount }} TZS {% trans "on" %} {{ payment.date }}</p>
   <form method="post" class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md">
     {% csrf_token %}
-    <div class="mb-4">
-      <label for="issue" class="block text-sm font-medium">{% trans "Describe the Issue" %}</label>
-      <textarea name="issue" id="issue" class="w-full p-2 border rounded-lg" required></textarea>
-    </div>
+    {{ form.as_p }}
     <button type="submit" class="w-full bg-[var(--primary)] text-white p-2 rounded-lg hover:bg-green-600">{% trans "Submit" %}</button>
   </form>
 </div>

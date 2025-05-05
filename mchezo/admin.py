@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Group, Member, Payment, Payout, Invite
+from .models import Group, Member, Payment, Invite
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
@@ -18,12 +18,6 @@ class PaymentAdmin(admin.ModelAdmin):
     list_display = ('member', 'amount', 'date', 'created_at')
     search_fields = ('member__user__phone_number',)
     list_filter = ('date',)
-
-@admin.register(Payout)
-class PayoutAdmin(admin.ModelAdmin):
-    list_display = ('member', 'amount', 'date', 'delivered')
-    search_fields = ('member__user__phone_number',)
-    list_filter = ('delivered', 'date')
 
 @admin.register(Invite)
 class InviteAdmin(admin.ModelAdmin):

@@ -62,12 +62,3 @@ class BalanceForm(forms.ModelForm):
         if date > timezone.now().date():
             raise forms.ValidationError(_('Future dates are not allowed'))
         return date
-    
-class GroupForm(forms.BaseModelForm):
-    pass
-
-class PaymentForm(forms.BaseModelForm):
-    pass
-
-class ReportIssueForm(forms.BaseModelForm):
-    pass

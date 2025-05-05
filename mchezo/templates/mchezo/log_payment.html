@@ -1,0 +1,15 @@
+{% extends 'core/base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans "Mchezo - Log Payment" %}{% endblock %}
+
+{% block content %}
+<div class="container max-w-md mx-auto">
+  <h2 class="text-xl font-semibold mb-4">{% trans "Log Payment for" %} {{ member.user.first_name|default:member.user.phone_number }}</h2>
+  <form method="post" class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="w-full bg-[var(--primary)] text-white p-2 rounded-lg hover:bg-green-600">{% trans "Log Payment" %}</button>
+  </form>
+</div>
+{% endblock %}

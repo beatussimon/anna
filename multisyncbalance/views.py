@@ -1,180 +1,107 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from django.http import HttpResponse
-from django.utils import timezone
-# Import models from the 'mchezo' app (assuming they are defined there)
-from mchezo.models import Group, Member, Payment, Invite
-
-# Import models defined in the current app ('multisyncbalance')
-from .models import Balance, Provider
-from .forms import GroupForm, PaymentForm, ReportIssueForm
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from io import BytesIO
-from twilio.rest import Client
-from django.conf import settings
-import datetime
+from .models import Provider, Balance
 import json
+from decimal import Decimal
+from django.utils import timezone
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)  # Convert Decimal to float for JSON serialization
+        return super().default(obj)
 
 @login_required
 def dashboard(request):
-    # Fetch all balances for the user
-    balances = Balance.objects.filter(user=request.user).order_by('-date')
-
+    providers = Balance.objects.select_related('provider').order_by('-date')[:5]
+    
     # Calculate performance metrics
-    total_commissions = 0
-    for balance in balances:
-        if balance.float_end is not None and balance.cash_end is not None:
-            net_start = balance.cash_start + balance.float_start
-            net_end = balance.cash_end + balance.float_end
-            commission = net_end - net_start  # Net change in balance
-            total_commissions += commission
-
-    total_transactions = balances.count()
-
-    # Calculate float growth as a percentage (considering both cash and float)
-    float_growth = 0
-    if balances.exists():
-        first_balance = balances.first()
-        if first_balance.cash_start + first_balance.float_start > 0:
-            net_start = first_balance.cash_start + first_balance.float_start
-            net_end = (first_balance.cash_end or 0) + (first_balance.float_end or 0)
-            float_growth = ((net_end - net_start) / net_start * 100) if net_start > 0 else 0
-
-    # Prepare chart data (net change over time)
-    chart_labels = []
-    chart_data = []
-    for balance in balances:
-        chart_labels.append(balance.date.strftime('%Y-%m-%d'))
-        if balance.cash_end is not None and balance.float_end is not None:
-            net_start = balance.cash_start + balance.float_start
-            net_end = balance.cash_end + balance.float_end
-            net_change = net_end - net_start
-        else:
-            net_change = 0
-        chart_data.append(float(net_change))
-
-    # Reverse the lists for chronological display
-    chart_labels = chart_labels[::-1]
-    chart_data = chart_data[::-1]
-
-    # Convert to JSON for safe embedding in the template
-    chart_labels_json = json.dumps(chart_labels)
-    chart_data_json = json.dumps(chart_data)
+    total_commissions = sum(provider.commissions for provider in providers)
+    total_transactions = sum(provider.transactions for provider in providers)
+    float_growth = (
+        (providers[0].float_end - providers[0].float_start) / providers[0].float_start * 100
+        if providers and providers[0].float_start else 0
+    )
 
     performance = {
         'commissions': total_commissions,
         'transactions': total_transactions,
-        'float_growth': round(float_growth, 2)
+        'float_growth': float_growth,
     }
 
+    # Prepare chart data
+    chart_data = [
+        {
+            'date': str(provider.date),
+            'float_growth': float((provider.float_end - provider.float_start) / provider.float_start * 100
+                              if provider.float_start else 0),
+        }
+        for provider in providers
+    ]
+
     return render(request, 'multisyncbalance/dashboard.html', {
-        'chart_labels_json': chart_labels_json,
-        'chart_data_json': chart_data_json,
-        'performance': performance
+        'providers': providers,
+        'performance': performance,
+        'chart_data_json': json.dumps(chart_data, cls=DecimalEncoder),
     })
 
 @login_required
-def admin_dashboard(request, group_id):
-    group = get_object_or_404(Group, id=group_id, admin=request.user)
-    members = group.members.all()
-    today = timezone.now().date()
-    if request.GET.get('today'):
-        payments = Payment.objects.filter(member__group=group, date=today)
-    else:
-        payments = Payment.objects.filter(member__group=group)
-    return render(request, 'mchezo/admin_dashboard.html', {'group': group, 'members': members, 'payments': payments, 'today': today})
-
-@login_required
-def create_group(request):
+def balance_form(request):
     if request.method == 'POST':
-        form = GroupForm(request.POST)
-        if form.is_valid():
-            group = form.save(commit=False)
-            group.admin = request.user
-            group.save()
-            Member.objects.create(group=group, user=request.user)
-            invite = Invite.objects.create(group=group)
-            invite_url = request.build_absolute_uri(f"/mchezo/join/{invite.token}/")
-            client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-            client.messages.create(
-                body=f"Join {group.name}: {invite_url}",
-                from_=f"whatsapp:{settings.TWILIO_PHONE_NUMBER}",
-                to=f"whatsapp:{request.user.phone_number}"
-            )
-            messages.success(request, 'Group created and invite sent via WhatsApp')
-            return redirect('mchezo:dashboard')
-    else:
-        form = GroupForm()
-    return render(request, 'mchezo/create_group.html', {'form': form})
+        provider_id = request.POST.get('provider')
+        provider = Provider.objects.get(id=provider_id)
+        date = request.POST.get('date')
+        cash_start = request.POST.get('cash_start')
+        float_start = request.POST.get('float_start')
+        cash_end = request.POST.get('cash_end')
+        float_end = request.POST.get('float_end')
+        transactions = request.POST.get('transactions')
+        commissions = request.POST.get('commissions')
+
+        balance = Balance(
+            provider=provider,
+            date=date,
+            cash_start=cash_start,
+            float_start=float_start,
+            cash_end=cash_end,
+            float_end=float_end,
+            transactions=transactions,
+            commissions=commissions,
+            is_balanced=(float(cash_start) + float(float_start) == float(cash_end) + float(float_end))
+        )
+        balance.save()
+        return redirect('multisyncbalance:dashboard')
+
+    providers = Provider.objects.all()
+    return render(request, 'multisyncbalance/balance_form.html', {
+        'providers': providers,
+        'today': timezone.now().date(),
+    })
 
 @login_required
-def join_group(request, token):
-    invite = get_object_or_404(Invite, token=token, expires_at__gt=timezone.now())
-    if Member.objects.filter(group=invite.group, user=request.user).exists():
-        messages.error(request, 'You are already a member of this group')
-        return redirect('mchezo:dashboard')
-    Member.objects.create(group=invite.group, user=request.user)
-    messages.success(request, 'Joined group successfully')
-    return redirect('mchezo:dashboard')
+def export_csv(request):
+    import csv
+    from django.http import HttpResponse
 
-@login_required
-def log_payment(request, member_id):
-    member = get_object_or_404(Member, id=member_id, group__admin=request.user)
-    if request.method == 'POST':
-        form = PaymentForm(request.POST)
-        if form.is_valid():
-            payment = form.save(commit=False)
-            payment.member = member
-            payment.save()
-            member.total_paid += payment.amount
-            member.save()
-            client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-            client.messages.create(
-                body=f"Your {payment.amount} TZS payment for {member.group.name} was logged on {payment.date}.",
-                from_=f"whatsapp:{settings.TWILIO_PHONE_NUMBER}",
-                to=f"whatsapp:{member.user.phone_number}"
-            )
-            messages.success(request, 'Payment logged successfully')
-            return redirect('mchezo:admin_dashboard', group_id=member.group.id)
-    else:
-        form = PaymentForm()
-    return render(request, 'mchezo/log_payment.html', {'form': form, 'member': member})
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="balances.csv"'
 
-@login_required
-def report_issue(request, payment_id):
-    payment = get_object_or_404(Payment, id=payment_id, member__user=request.user)
-    if request.method == 'POST':
-        form = ReportIssueForm(request.POST)
-        if form.is_valid():
-            issue = form.cleaned_data['issue']
-            client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-            client.messages.create(
-                body=f"Issue reported for payment of {payment.amount} TZS on {payment.date}: {issue}",
-                from_=f"whatsapp:{settings.TWILIO_PHONE_NUMBER}",
-                to=f"whatsapp:{payment.member.group.admin.phone_number}"
-            )
-            messages.success(request, 'Issue reported successfully')
-            return redirect('mchezo:dashboard')
-    else:
-        form = ReportIssueForm()
-    return render(request, 'mchezo/report_issue.html', {'form': form, 'payment': payment})
+    writer = csv.writer(response)
+    writer.writerow(['Date', 'Provider', 'Starting Cash', 'Starting Float', 'Ending Cash', 'Ending Float', 'Transactions', 'Commissions', 'Balanced'])
 
-@login_required
-def export_pdf(request, group_id):
-    group = get_object_or_404(Group, id=group_id, admin=request.user)
-    members = group.members.all()
-    buffer = BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A4)
-    p.drawString(100, 800, f"{group.name} - Financial Report")
-    y = 750
-    for member in members:
-        p.drawString(100, y, f"{member.user.phone_number}: Paid {member.total_paid} TZS, Debt {member.debt} TZS")
-        y -= 20
-    p.showPage()
-    p.save()
-    buffer.seek(0)
-    response = HttpResponse(buffer, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="{group.name}_report.pdf"'
+    balances = Balance.objects.all()
+    for balance in balances:
+        writer.writerow([
+            balance.date,
+            balance.provider.name,
+            balance.cash_start,
+            balance.float_start,
+            balance.cash_end,
+            balance.float_end,
+            balance.transactions,
+            balance.commissions,
+            'Yes' if balance.is_balanced else 'No'
+        ])
+
     return response

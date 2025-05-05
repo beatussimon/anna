@@ -1,15 +1,12 @@
-"""
-Django settings for Anna project.
-"""
 import os
 from pathlib import Path
-from django.utils.translation import gettext_lazy as _
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'your-secret-key-here'  # Replace with secure key
-DEBUG = False
-ALLOWED_HOSTS = ['anna.app', 'localhost', '127.0.0.1']
+SECRET_KEY = 'your-secret-key-here'
+DEBUG = True
+
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -18,7 +15,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'sslserver',
     'core',
     'mchezo',
     'multisyncbalance',
@@ -64,44 +60,48 @@ DATABASES = {
 }
 
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validators.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validators.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validators.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validators.NumericPasswordValidator'},
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
 
-LANGUAGE_CODE = 'en'
+# Set custom user model
+AUTH_USER_MODEL = 'core.User'
+
+LANGUAGE_CODE = 'en-us'
 LANGUAGES = [
-    ('en', _('English')),
-    ('sw', _('Swahili')),
+    ('en', 'English'),
+    ('sw', 'Swahili'),
 ]
 LOCALE_PATHS = [BASE_DIR / 'locale']
-TIME_ZONE = 'Africa/Dar_es_Salaam'
+
+TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'core/static']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Security settings
-#SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'noreply@example.com'
 
-# Twilio settings
-TWILIO_ACCOUNT_SID = 'your-twilio-account-sid'
-TWILIO_AUTH_TOKEN = 'your-twilio-auth-token'
-TWILIO_PHONE_NUMBER = '+1234567890'
-
-# Custom user model
-AUTH_USER_MODEL = 'core.User'
-
-# Login settings
-LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = '/'
+# Explicitly disable all HTTPS-related settings
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SECURE_HSTS_SECONDS = 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+SECURE_PROXY_SSL_HEADER = None
+USE_X_FORWARDED_HOST = False

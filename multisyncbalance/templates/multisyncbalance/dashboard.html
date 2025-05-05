@@ -6,49 +6,102 @@
 {% block content %}
 <div class="container max-w-4xl mx-auto">
   <h2 class="text-xl font-semibold mb-4">{% trans "Wakala Balance Dashboard" %}</h2>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-    <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md">
-      <p class="text-sm">{% trans "Daily Commissions" %}</p>
-      <p class="text-lg font-semibold">{{ performance.commissions }} TZS</p>
+  
+  <!-- Performance Metrics -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+    <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md text-center">
+      <p class="text-sm font-medium">{% trans "Commissions Earned" %}</p>
+      <p class="text-lg font-bold">{{ performance.commissions|floatformat:2 }} TZS</p>
     </div>
-    <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md">
-      <p class="text-sm">{% trans "Transactions" %}</p>
-      <p class="text-lg font-semibold">{{ performance.transactions }}</p>
+    <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md text-center">
+      <p class="text-sm font-medium">{% trans "Transactions" %}</p>
+      <p class="text-lg font-bold">{{ performance.transactions }}</p>
     </div>
-    <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md">
-      <p class="text-sm">{% trans "Float Growth" %}</p>
-      <p class="text-lg font-semibold">{{ performance.float_growth|floatformat:2 }}%</p>
+    <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md text-center">
+      <p class="text-sm font-medium">{% trans "Float Growth" %}</p>
+      <p class="text-lg font-bold">{{ performance.float_growth|floatformat:2 }}%</p>
     </div>
   </div>
-  <div id="chart-data" 
-       data-labels="{{ chart_labels_json|escape }}" 
-       data-values="{{ chart_data_json|escape }}" 
-       style="display: none;"></div>
-  <canvas id="floatTrendChart" class="mb-4"></canvas>
-  <a href="{% url 'multisyncbalance:balance_form' %}" class="block bg-[var(--primary)] text-white p-2 rounded-lg text-center hover:bg-green-600 mb-4">{% trans "Record Balance" %}</a>
-  <a href="{% url 'multisyncbalance:export_csv' %}" class="block bg-blue-500 text-white p-2 rounded-lg text-center hover:bg-blue-600">{% trans "Export CSV" %}</a>
-  <script>
-    const chartDataElement = document.getElementById('chart-data');
-    const chartLabels = JSON.parse(chartDataElement.getAttribute('data-labels'));
-    const chartDataValues = JSON.parse(chartDataElement.getAttribute('data-values'));
-    const ctx = document.getElementById('floatTrendChart').getContext('2d');
-    const chartData = {
-      labels: chartLabels,
-      datasets: [{
-        label: 'Float Growth',
-        data: chartDataValues,
-        borderColor: 'var(--primary)',
-        fill: false
-      }]
-    };
+
+  <!-- Chart -->
+  <div class="bg-[var(--card-bg)] p-4 rounded-lg shadow-md mb-4">
+    <canvas id="floatGrowthChart" aria-label="{% trans 'Float Growth Chart' %}"></canvas>
+  </div>
+
+  <!-- Recent Balances Table -->
+  <div class="table-responsive">
+    <table class="table w-full bg-[var(--card-bg)] rounded-lg shadow-md">
+      <thead>
+        <tr class="bg-[var(--primary)] text-white">
+          <th class="p-2">{% trans "Date" %}</th>
+          <th class="p-2">{% trans "Provider" %}</th>
+          <th class="p-2">{% trans "Starting Cash" %}</th>
+          <th class="p-2">{% trans "Starting Float" %}</th>
+          <th class="p-2">{% trans "Ending Cash" %}</th>
+          <th class="p-2">{% trans "Ending Float" %}</th>
+          <th class="p-2">{% trans "Balanced" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for balance in providers %}
+          <tr>
+            <td data-label="{% trans 'Date' %}" class="p-2">{{ balance.date }}</td>
+            <td data-label="{% trans 'Provider' %}" class="p-2">{{ balance.provider.name }}</td>
+            <td data-label="{% trans 'Starting Cash' %}" class="p-2">{{ balance.cash_start }} TZS</td>
+            <td data-label="{% trans 'Starting Float' %}" class="p-2">{{ balance.float_start }} TZS</td>
+            <td data-label="{% trans 'Ending Cash' %}" class="p-2">{{ balance.cash_end|default:"-" }} TZS</td>
+            <td data-label="{% trans 'Ending Float' %}" class="p-2">{{ balance.float_end|default:"-" }} TZS</td>
+            <td data-label="{% trans 'Balanced' %}" class="p-2">
+              {% if balance.is_balanced %}
+                <i class="fas fa-check text-[var(--primary)]" aria-label="{% trans 'Balanced' %}"></i>
+              {% else %}
+                <i class="fas fa-times text-[var(--error)]" aria-label="{% trans 'Not Balanced' %}"></i>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="flex justify-between mt-4">
+    <a href="{% url 'multisyncbalance:balance_form' %}" class="bg-[var(--primary)] text-white p-2 rounded-lg hover:bg-green-600">{% trans "Add Balance" %}</a>
+    <a href="{% url 'multisyncbalance:export_csv' %}" class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">{% trans "Export CSV" %}</a>
+  </div>
+</div>
+
+<script>
+  const chartData = JSON.parse('{{ chart_data_json|escapejs }}');
+  document.addEventListener('DOMContentLoaded', () => {
+    const ctx = document.getElementById('floatGrowthChart').getContext('2d');
+    const data = chartData.length > 0 ? chartData : [{ date: 'No Data', float_growth: 0 }];
+
     new Chart(ctx, {
       type: 'line',
-      data: chartData,
+      data: {
+        labels: data.map(item => item.date),
+        datasets: [{
+          label: 'Float Growth (TZS)',
+          data: data.map(item => item.float_growth),
+          borderColor: 'var(--primary)',
+          backgroundColor: 'rgba(34, 197, 94, 0.2)',
+          fill: true,
+          tension: 0.4
+        }]
+      },
       options: {
         responsive: true,
-        scales: { y: { beginAtZero: true } }
+        plugins: {
+          legend: { display: true },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+          x: { display: true, title: { display: true, text: 'Date' } },
+          y: { display: true, title: { display: true, text: 'Float Growth (TZS)' } }
+        }
       }
     });
-  </script>
-</div>
+  });
+</script>
 {% endblock %}

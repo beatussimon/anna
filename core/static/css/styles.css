@@ -1,32 +1,41 @@
-    /* Custom styles for Anna */
 .service-card:hover {
-    transform: scale(1.05);
-    transition: transform 0.2s;
-  }
-  
-  .table-responsive {
-    overflow-x: auto;
-  }
-  
+  transform: scale(1.05);
+  transition: transform 0.2s;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+.table th, .table td {
+  white-space: nowrap;
+  padding: 8px;
+}
+
+.progress-bar {
+  background-color: #e5e7eb;
+  border-radius: 9999px;
+  height: 12px;
+}
+
+.progress-fill {
+  background-color: var(--primary);
+  height: 100%;
+  border-radius: 9999px;
+}
+
+@media (max-width: 640px) {
   .table th, .table td {
-    white-space: nowrap;
+    display: block;
+    width: 100%;
   }
-  
-  .progress-bar {
-    background-color: #e5e7eb;
-    border-radius: 9999px;
-    height: 12px;
+  .table thead {
+    display: none;
   }
-  
-  .progress-fill {
-    background-color: var(--primary);
-    height: 100%;
-    border-radius: 9999px;
+  .table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    display: inline-block;
+    width: 50%;
   }
-  
-  @media (max-width: 640px) {
-    .table th, .table td {
-      display: block;
-      width: 100%;
-    }
-  }
+}

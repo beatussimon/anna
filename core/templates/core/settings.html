@@ -12,6 +12,10 @@
       <label for="first_name" class="block text-sm font-medium">{% trans "First Name" %}</label>
       <input type="text" name="first_name" id="first_name" value="{{ request.user.first_name }}" class="w-full p-2 border rounded-lg">
     </div>
+    <div class="mb-4">
+      <label for="email" class="block text-sm font-medium">{% trans "Email" %}</label>
+      <input type="email" name="email" id="email" value="{{ request.user.email }}" class="w-full p-2 border rounded-lg">
+    </div>
     <button type="submit" class="w-full bg-[var(--primary)] text-white p-2 rounded-lg hover:bg-green-600">{% trans "Save" %}</button>
   </form>
 </div>

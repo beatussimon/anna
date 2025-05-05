@@ -17,6 +17,10 @@ class Provider(models.Model):
     def __str__(self):
         return self.name
 
+    def clean(self):
+        if self.commission_rate < 0 or self.commission_rate > 100:
+            raise ValidationError(_('Commission rate must be between 0 and 100%'))
+
 class Balance(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='balances', verbose_name=_('User'))
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='balances', verbose_name=_('Provider'))
@@ -33,8 +37,14 @@ class Balance(models.Model):
         verbose_name_plural = _('Balances')
 
     def clean(self):
-        if self.cash_start < 0 or self.float_start < 0 or (self.cash_end is not None and self.cash_end < 0) or (self.float_end is not None and self.float_end < 0):
-            raise ValidationError(_('Balances cannot be negative'))
+        if self.cash_start < 0 or self.float_start < 0:
+            raise ValidationError(_('Starting balances cannot be negative'))
+        if self.cash_end is not None and self.cash_end < 0:
+            raise ValidationError(_('Ending cash cannot be negative'))
+        if self.float_end is not None and self.float_end < 0:
+            raise ValidationError(_('Ending float cannot be negative'))
+        if self.date > timezone.now().date():
+            raise ValidationError(_('Future dates not allowed'))
         if self.cash_end is not None and self.float_end is not None:
             net_start = self.cash_start + self.float_start
             net_end = self.cash_end + self.float_end

@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+import secrets
+from django.contrib.auth.models import AbstractUser
 
 class UserManager(BaseUserManager):
     def create_user(self, phone_number, password=None, **extra_fields):
@@ -16,21 +18,19 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         return self.create_user(phone_number, password, **extra_fields)
 
-class User(AbstractBaseUser, PermissionsMixin):
-    phone_number = models.CharField(max_length=15, unique=True, verbose_name=_('Phone Number'))
-    first_name = models.CharField(max_length=50, blank=True, verbose_name=_('First Name'))
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
-    date_joined = models.DateTimeField(auto_now_add=True)
-
-    objects = UserManager()
-
-    USERNAME_FIELD = 'phone_number'
-    REQUIRED_FIELDS = []
-
-    class Meta:
-        verbose_name = _('User')
-        verbose_name_plural = _('Users')
-
-    def __str__(self):
-        return self.phone_number
+class User(AbstractUser):
+    # Add any custom fields here
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    # Ensure groups and user_permissions use unique related_name
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        related_name='core_users_groups',  # Unique related_name
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        related_name='core_users_permissions',  # Unique related_name
+    )
